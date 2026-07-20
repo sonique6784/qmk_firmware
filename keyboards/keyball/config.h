@@ -1,6 +1,10 @@
 #define WS2812_DI_PIN GP0
 #ifdef RGBLIGHT_ENABLE
-#    define RGBLIGHT_DEFAULT_MODE RGBLIGHT_MODE_RAINBOW_SWIRL
+// requires clearing the EEPROM - L2 / [ Key
+#define RGBLIGHT_DEFAULT_MODE RGBLIGHT_MODE_STATIC_LIGHT
+#define RGBLIGHT_DEFAULT_HUE 16  // orange
+#define RGBLIGHT_DEFAULT_SAT 255 // full saturation
+#define RGBLIGHT_DEFAULT_VAL 142
 #endif
 
 #ifndef OLED_FONT_H
@@ -23,6 +27,8 @@
 // multiplier so the OS applies smooth, sub-line scrolling.
 #define WHEEL_EXTENDED_REPORT
 #define POINTING_DEVICE_HIRES_SCROLL_ENABLE
+#define KEYBALL_SCROLL_DIV_DEFAULT 6
+#define ENABLE_AUTO_SCROLL_LAYER 4
 
 #define SPI_DRIVER SPID0
 #define SPI_SCK_PIN GP22
