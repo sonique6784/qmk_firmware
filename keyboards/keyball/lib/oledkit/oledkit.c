@@ -21,8 +21,52 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #if defined(OLED_ENABLE) && !defined(OLEDKIT_DISABLE)
 
 __attribute__((weak)) void oledkit_render_logo_user(void) {
-    // Require `OLED_FONT_H "keyboards/keyball/lib/logofont/logofont.c"`
-    // Possible animation here :) sonique
+    // Snake animation revealing the Keyball logo
+    // Requires font characters 0xC4-0xC7 in logofont.c
+    static uint16_t anim_start = 0;
+    static bool     anim_done  = false;
+
+    // Head column per frame (-1 = off-screen)
+    static const int8_t head_cols[10] = {
+        2, 4, 6, 8, 10, 12, 14, 15, 16, 20
+    };
+
+    const uint16_t FRAME_MS = 150;
+
+    if (!anim_done) {
+        if (anim_start == 0) anim_start = timer_read();
+
+        uint8_t frame = timer_elapsed(anim_start) / FRAME_MS;
+        if (frame > 9) { frame = 9; anim_done = true; }
+
+        int8_t hc = head_cols[frame];
+        int8_t tc = hc - 4;
+
+        for (int y = 0; y < 3; y++) {
+            oled_write_P(PSTR("  "), false);
+            for (int x = 0; x < 16; x++) {
+                uint8_t ch;
+                bool in_snake = (x >= tc && x <= hc && x >= 0 && x <= 15);
+
+                if (in_snake) {
+                    if (x == hc && hc <= 15)
+                        ch = 0xC4;
+                    else if (x == tc && tc >= 0)
+                        ch = 0xC7;
+                    else
+                        ch = ((hc - x) & 1) ? 0xC5 : 0xC6;
+                } else if (x < tc || hc < 0) {
+                    ch = 0x80 + y * 16 + x;
+                } else {
+                    ch = 0x7F;
+                }
+                oled_write_char(ch, false);
+            }
+            oled_advance_page(false);
+        }
+        return;
+    }
+
     char ch = 0x80;
     for (int y = 0; y < 3; y++) {
         oled_write_P(PSTR("  "), false);

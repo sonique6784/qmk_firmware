@@ -10,7 +10,7 @@
 #ifndef OLED_FONT_H
 #    define OLED_FONT_H "keyboards/keyball/lib/logofont/logofont.c"
 #    define OLED_FONT_START 32
-#    define OLED_FONT_END 195
+#    define OLED_FONT_END 199
 #endif
 
 #define USB_VBUS_PIN GP19
