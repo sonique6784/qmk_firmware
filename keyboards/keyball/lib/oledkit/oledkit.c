@@ -20,16 +20,18 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #if defined(OLED_ENABLE) && !defined(OLEDKIT_DISABLE)
 
+// Defined in logofont.c — 30 frames × 288 bytes each in PROGMEM.
+#define ANIM_FRAME_COUNT 30
+#define ANIM_FRAME_SIZE  288
+extern const uint8_t anim_frames[][ANIM_FRAME_SIZE] PROGMEM;
+
 __attribute__((weak)) void oledkit_render_logo_user(void) {
-    // Snake animation revealing the Keyball logo
-    // Requires font characters 0xC4-0xC7 in logofont.c
+    // Frame-by-frame animation of the Keyball logo.
+    // Each frame is a raw 3-page bitmap (288 bytes) stored in PROGMEM.
+    // anim_frames[0] is blank, anim_frames[ANIM_FRAME_COUNT-1] is the
+    // final logo.  After the last frame, the logo stays visible.
     static uint16_t anim_start = 0;
     static bool     anim_done  = false;
-
-    // Head column per frame (-1 = off-screen)
-    static const int8_t head_cols[10] = {
-        2, 4, 6, 8, 10, 12, 14, 15, 16, 20
-    };
 
     const uint16_t FRAME_MS = 150;
 
@@ -37,43 +39,34 @@ __attribute__((weak)) void oledkit_render_logo_user(void) {
         if (anim_start == 0) anim_start = timer_read();
 
         uint8_t frame = timer_elapsed(anim_start) / FRAME_MS;
-        if (frame > 9) { frame = 9; anim_done = true; }
+        if (frame >= ANIM_FRAME_COUNT) {
+            frame = ANIM_FRAME_COUNT - 1;
+            anim_done = true;
+        }
 
-        int8_t hc = head_cols[frame];
-        int8_t tc = hc - 4;
-
-        for (int y = 0; y < 3; y++) {
-            oled_write_P(PSTR("  "), false);
-            for (int x = 0; x < 16; x++) {
-                uint8_t ch;
-                bool in_snake = (x >= tc && x <= hc && x >= 0 && x <= 15);
-
-                if (in_snake) {
-                    if (x == hc && hc <= 15)
-                        ch = 0xC4;
-                    else if (x == tc && tc >= 0)
-                        ch = 0xC7;
-                    else
-                        ch = ((hc - x) & 1) ? 0xC5 : 0xC6;
-                } else if (x < tc || hc < 0) {
-                    ch = 0x80 + y * 16 + x;
-                } else {
-                    ch = 0x7F;
-                }
-                oled_write_char(ch, false);
-            }
-            oled_advance_page(false);
+#if defined(__AVR__)
+        const uint8_t *p =
+            (const uint8_t *)pgm_read_ptr(&anim_frames[frame]);
+#else
+        const uint8_t *p = anim_frames[frame];
+#endif
+        for (int page = 0; page < 3; page++) {
+            oled_set_cursor(2, page);
+            oled_write_raw_P((const char *)(p + page * 96), 96);
         }
         return;
     }
 
-    char ch = 0x80;
-    for (int y = 0; y < 3; y++) {
-        oled_write_P(PSTR("  "), false);
-        for (int x = 0; x < 16; x++) {
-            oled_write_char(ch++, false);
-        }
-        oled_advance_page(false);
+    // After animation completes, hold the last frame.
+#if defined(__AVR__)
+    const uint8_t *p =
+        (const uint8_t *)pgm_read_ptr(&anim_frames[ANIM_FRAME_COUNT - 1]);
+#else
+    const uint8_t *p = anim_frames[ANIM_FRAME_COUNT - 1];
+#endif
+    for (int page = 0; page < 3; page++) {
+        oled_set_cursor(2, page);
+        oled_write_raw_P((const char *)(p + page * 96), 96);
     }
 }
 

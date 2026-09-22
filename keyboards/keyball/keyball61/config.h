@@ -56,3 +56,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #ifdef RGB_MATRIX_ENABLE
 #    define RGB_MATRIX_SPLIT    { 37, 37 }
 #endif
+
+// Sleep the OLED and the RGB LEDs after this long without input. Both
+// features share this one value (keyball61.c reads OLED_TIMEOUT for the RGB
+// timeout) so the two always match.
+#define OLED_TIMEOUT 60000

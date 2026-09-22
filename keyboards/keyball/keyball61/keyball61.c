@@ -46,3 +46,26 @@ void keyball_on_adjust_layout(keyball_adjust_t v) {
     rgblight_set_effect_range(0, lednum_this + lednum_that);
 #endif
 }
+
+// Turn the RGB LEDs off after OLED_TIMEOUT of inactivity, matching the OLED.
+// Uses last_input_activity_elapsed() (matrix + encoder + trackball, synced to
+// both halves) exactly like the OLED driver, so both sleep and wake together.
+// The flag distinguishes our idle-off from a manual UG_TOGG off so we never
+// force the LEDs back on over an explicit toggle.
+#ifdef RGBLIGHT_ENABLE
+static bool rgb_idle_off = false;
+
+void matrix_scan_kb(void) {
+    matrix_scan_user();
+
+    if (last_input_activity_elapsed() > OLED_TIMEOUT*5) {
+        if (rgblight_is_enabled()) {
+            rgblight_disable_noeeprom();
+            rgb_idle_off = true;
+        }
+    } else if (rgb_idle_off) {
+        rgblight_enable_noeeprom();
+        rgb_idle_off = false;
+    }
+}
+#endif
