@@ -30,44 +30,35 @@ __attribute__((weak)) void oledkit_render_logo_user(void) {
     // Each frame is a raw 3-page bitmap (288 bytes) stored in PROGMEM.
     // anim_frames[0] is blank, anim_frames[ANIM_FRAME_COUNT-1] is the
     // final logo.  After the last frame, the logo stays visible.
-    static uint16_t anim_start = 0;
-    static bool     anim_done  = false;
+    static uint16_t anim_start;
+    static uint8_t  rendered_frame = ANIM_FRAME_COUNT;
+    static bool     anim_started;
 
     const uint16_t FRAME_MS = 150;
 
-    if (!anim_done) {
-        if (anim_start == 0) anim_start = timer_read();
+    if (!anim_started) {
+        anim_start   = timer_read();
+        anim_started = true;
+    }
 
-        uint8_t frame = timer_elapsed(anim_start) / FRAME_MS;
-        if (frame >= ANIM_FRAME_COUNT) {
-            frame = ANIM_FRAME_COUNT - 1;
-            anim_done = true;
-        }
+    uint8_t frame = timer_elapsed(anim_start) / FRAME_MS;
+    if (frame >= ANIM_FRAME_COUNT) {
+        frame = ANIM_FRAME_COUNT - 1;
+    }
 
-#if defined(__AVR__)
-        const uint8_t *p =
-            (const uint8_t *)pgm_read_ptr(&anim_frames[frame]);
-#else
-        const uint8_t *p = anim_frames[frame];
-#endif
-        for (int page = 0; page < 3; page++) {
-            oled_set_cursor(2, page);
-            oled_write_raw_P((const char *)(p + page * 96), 96);
-        }
+    // oled_task_user() runs every OLED update interval.  Skip both the flash
+    // reads and buffer comparisons until it is time to show a new frame.
+    if (frame == rendered_frame) {
         return;
     }
 
-    // After animation completes, hold the last frame.
-#if defined(__AVR__)
-    const uint8_t *p =
-        (const uint8_t *)pgm_read_ptr(&anim_frames[ANIM_FRAME_COUNT - 1]);
-#else
-    const uint8_t *p = anim_frames[ANIM_FRAME_COUNT - 1];
-#endif
+    const uint8_t *p = anim_frames[frame];
     for (int page = 0; page < 3; page++) {
         oled_set_cursor(2, page);
         oled_write_raw_P((const char *)(p + page * 96), 96);
     }
+
+    rendered_frame = frame;
 }
 
 __attribute__((weak)) void oledkit_render_info_user(void) {
